@@ -1,36 +1,72 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import time
+import pandas as pd
+import pyautogui
+import pyperclip
+import webbrowser
+import os
 
-# Initialize the Edge WebDriver without any options
-driver = webdriver.Edge('msedgedriver.exe')
+def send_whatsapp_message_with_image(phone_number, messages, image_path, delay_between=5):
+    for message in messages:
+        pyperclip.copy(message)
+        print(f"Sending message: {message} to {phone_number}")
+        pyautogui.hotkey('ctrl', 'v')
+        pyautogui.press("enter")
+        time.sleep(delay_between)
 
-# Open WhatsApp Web
-driver.get('https://web.whatsapp.com/')
+    # Send the image
+    if os.path.exists(image_path):
+        print(f"Sending image: {image_path} to {phone_number}")
+        # Locate and click the attachment icon
+        attachment_icon = pyautogui.locateOnScreen('attachment_icon.png', confidence=0.8)
+        if attachment_icon:
+            pyautogui.click(attachment_icon)
+            time.sleep(1)
+            pyautogui.write(image_path)
+            pyautogui.press("enter")
+            time.sleep(delay_between)
+        else:
+            print("Attachment icon not found on the screen.")
+    else:
+        print(f"Image not found: {image_path}")
 
-# Wait for the user to scan the QR code and log in
-wait = WebDriverWait(driver, 120)  # Extend the timeout to 120 seconds
-wait.until(EC.presence_of_element_located((By.XPATH, '//div[@class="_2_1wd copyable-text selectable-text"][@contenteditable="true"][@data-tab="3"]')))
+def main():
+    contacts = pd.read_excel("contacts.xlsx")
 
-# Find the chat input field and enter the recipient's name
-search_box = driver.find_element(By.XPATH, '//div[@class="_2_1wd copyable-text selectable-text"][@contenteditable="true"][@data-tab="3"]')
-search_box.send_keys("Ashraful")
-wait.until(EC.presence_of_element_located((By.XPATH, '//span[contains(@title,"Ashraful")]')))
-search_box.send_keys(Keys.ENTER)
+    print("Available contacts:")
+    for idx, name in enumerate(contacts['Name']):
+        print(f"{idx + 1}. {name}")
 
-# Wait for the chat to load
-wait.until(EC.presence_of_element_located((By.XPATH, '//div[@class="_3u328 copyable-text selectable-text"][@contenteditable="true"][@data-tab="1"]')))
+    # Open WhatsApp Web once
+    webbrowser.open("https://web.whatsapp.com")
+    time.sleep(15)  # Wait for WhatsApp Web to load
 
-# Send the message repeatedly
-for i in range(10):
-    message_box = driver.find_element(By.XPATH, '//div[@class="_3u328 copyable-text selectable-text"][@contenteditable="true"][@data-tab="1"]')
-    message_box.send_keys("Your Message")
-    message_box.send_keys(Keys.ENTER)
-    wait.until(EC.text_to_be_present_in_element((By.XPATH, '//div[@class="_3XJ_-"]//span[contains(@class,"_3-8er")]'), "Your Message"))
-    # Wait for 1 minute before sending the next message
-    wait.until(EC.invisibility_of_element_located((By.XPATH, '//span[contains(@title,"typing...")]')))
+    for idx in range(len(contacts)):
+        print(f"{idx + 1}. {contacts['Name'][idx]}")
+        choice = idx  # Simulate user input for testing
+        time.sleep(1)
+        print(f"Selected contact: {contacts['Name'][choice]}")
 
-# Close the browser
-driver.quit()
+        if choice < 0 or choice >= len(contacts):
+            print("Invalid choice.")
+            return
+
+        phone_number = str(contacts.loc[choice, 'Phone'])
+
+        # Update the phone number in the current tab
+        pyautogui.hotkey('ctrl', 'l')  # Focus on the address bar
+        pyperclip.copy(f"https://web.whatsapp.com/send?phone={phone_number}")
+        pyautogui.hotkey('ctrl', 'v')  # Paste the new URL
+        pyautogui.press("enter")
+        time.sleep(10)  # Wait for the chat to load
+
+        messages = [
+            "Contact us for knowing more about ChatGPT."
+        ]
+
+        image_path = os.path.join("project", "image", "Chat-GPT-Marketing.png")
+
+        send_whatsapp_message_with_image(phone_number, messages, image_path, delay_between=4)
+        print(f"Messages and image sent to {contacts['Name'][choice]} ({phone_number})")
+
+if __name__ == "__main__":
+    main()

@@ -60,7 +60,8 @@ def main():
         time.sleep(10)  # Wait for the chat to load
 
         messages = [
-            "Contact us for knowing more about ChatGPT."
+            "I am trying to develop an automated whatsapp messenger using Python. Do not panic, you are not being hacked and you are one of my \
+            closest friends. I am just trying to learn how to use Python and I am using you as a test subject.",
         ]
 
         image_path = os.path.join("project", "image", "Chat-GPT-Marketing.png")
